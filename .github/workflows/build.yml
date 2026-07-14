@@ -17,7 +17,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -37,15 +36,21 @@ jobs:
     - name: Generate Android project
       run: npx expo prebuild --platform android --no-install
       
+    - name: Fix Kotlin version (patch RN libs.versions.toml)
+      run: |
+        sed -i 's/kotlin = "1.9.24"/kotlin = "1.9.25"/' node_modules/react-native/gradle/libs.versions.toml
+        echo "Patched Kotlin version to 1.9.25"
+        grep "kotlin" node_modules/react-native/gradle/libs.versions.toml | head -1
+        
     - name: Make gradlew executable
       run: chmod +x android/gradlew
       
     - name: Build APK (Debug)
       working-directory: android
-      run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1
+      run: ./gradlew assembleDebug --no-daemon 2>&1
       
     - name: Find APK
-      run: find android -name "*.apk" -type f 2>/dev/null
+      run: find android -name "*.apk" -type f
       
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
