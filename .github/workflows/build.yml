@@ -1,6 +1,8 @@
 name: Build Android APK
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -16,10 +18,31 @@ jobs:
       with:
         node-version: '18'
         
-    - name: Install EAS CLI
-      run: npm install -g eas-cli
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
       
-    - name: Build with EAS
-      run: eas build --platform android --profile preview --non-interactive
-      env:
-        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    - name: Install dependencies
+      run: npm install --legacy-peer-deps
+      
+    - name: Generate Android project
+      run: npx expo prebuild --platform android --no-install
+      
+    - name: Make gradlew executable
+      run: chmod +x android/gradlew
+      
+    - name: Build APK
+      working-directory: android
+      run: ./gradlew assembleRelease
+      
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: minshawi-app
+        path: android/app/build/outputs/apk/release/*.apk
+        retention-days: 30
