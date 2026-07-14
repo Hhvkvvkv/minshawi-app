@@ -36,12 +36,38 @@ jobs:
     - name: Generate Android project
       run: npx expo prebuild --platform android --no-install
       
-    - name: Fix Kotlin version (patch RN libs.versions.toml)
+    - name: Fix Kotlin version compatibility
       run: |
-        sed -i 's/kotlin = "1.9.24"/kotlin = "1.9.25"/' node_modules/react-native/gradle/libs.versions.toml
-        echo "Patched Kotlin version to 1.9.25"
-        grep "kotlin" node_modules/react-native/gradle/libs.versions.toml | head -1
-        
+        # The ext.kotlinVersion in build.gradle defaults to 1.9.25 but
+        # React Native's version catalog uses 1.9.24. 
+        # The Compose Compiler plugin classpath uses ext.kotlinVersion (1.9.25 -> plugin 1.5.15)
+        # but the actual Kotlin compiler uses the version catalog (1.9.24).
+        # Fix: patch build.gradle to use 1.9.24 to match the version catalog.
+        sed -i "s/kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.25'/kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.24'/" android/build.gradle
+        echo "Kotlin version in build.gradle:"
+        grep "kotlinVersion" android/build.gradle
+        echo ""
+        echo "Kotlin version in libs.versions.toml:"
+        grep "^kotlin" node_modules/react-native/gradle/libs.versions.toml
+
+    - name: Fix splash screen drawable
+      run: |
+        # Create a simple splash screen drawable if the reference exists but the file is missing
+        mkdir -p android/app/src/main/res/drawable
+        cat > android/app/src/main/res/drawable/splashscreen_logo.xml << 'XML'
+        <?xml version="1.0" encoding="utf-8"?>
+        <vector xmlns:android="http://schemas.android.com/apk/res/android"
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
+            <path
+                android:fillColor="#1a1410"
+                android:pathData="M0,0h108v108h-108z"/>
+        </vector>
+        XML
+        echo "Created splashscreen_logo drawable"
+
     - name: Make gradlew executable
       run: chmod +x android/gradlew
       
