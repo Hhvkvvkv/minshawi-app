@@ -36,13 +36,13 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x android/gradlew
       
-    - name: Build APK
+    - name: Build APK (Debug)
       working-directory: android
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleDebug
       
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: minshawi-app
-        path: android/app/build/outputs/apk/release/*.apk
+        name: minshawi-app-debug
+        path: android/app/build/outputs/apk/debug/*.apk
         retention-days: 30
